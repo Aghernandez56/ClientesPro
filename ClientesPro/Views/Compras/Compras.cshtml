@@ -1,0 +1,162 @@
+﻿@model IEnumerable<ClientesPro.ViewModels.CompraVM>
+
+@{
+    ViewData["Title"] = "Compras";
+}
+
+<div class="container mt-4">
+    <h2 class="text-center text-primary mb-4">
+        <i class="bi bi-basket-fill me-2"></i>Listado de Compras
+    </h2>
+
+    <!-- Formulario rápido para crear compra -->
+    <div class="card mb-4 p-3">
+        <h5>Crear compra rápida</h5>
+        <div class="row g-2 align-items-end">
+            <div class="col-sm-2">
+                <label class="form-label small">ClienteId</label>
+                <input id="f_clienteId" type="number" class="form-control" />
+            </div>
+            <div class="col-sm-2">
+                <label class="form-label small">ProductoId</label>
+                <input id="f_productoId" type="number" class="form-control" />
+            </div>
+            <div class="col-sm-2">
+                <label class="form-label small">Cantidad</label>
+                <input id="f_cantidad" type="number" class="form-control" value="1" min="1" />
+            </div>
+            <div class="col-sm-2">
+                <label class="form-label small">Total (opcional)</label>
+                <input id="f_total" type="number" step="0.01" class="form-control" />
+            </div>
+            <div class="col-sm-2">
+                <label class="form-label small">Estado</label>
+                <select id="f_estado" class="form-select">
+                    <option value="pendiente" selected>Pendiente</option>
+                    <option value="pagado">Pagado</option>
+                    <option value="cancelado">Cancelado</option>
+                </select>
+            </div>
+            <div class="col-sm-2">
+                <button id="btnCrearCompra" type="button" class="btn btn-primary w-100" onclick="crearCompraAjax()">Crear</button>
+            </div>
+        </div>
+
+        <div id="msgCrearCompra" class="mt-2"></div>
+    </div>
+
+    <!-- Tabla de compras -->
+    <div class="table-responsive shadow-sm">
+        <table id="tablaCompras" class="table table-striped table-hover align-middle text-center">
+            <thead class="table-dark">
+                <tr>
+                    <th>Id</th>
+                    <th>Cliente</th>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Total</th>
+                    <th>Fecha</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    string estadoClase = item.Estado switch
+                    {
+                        "pagado" => "badge bg-success",
+                        "pendiente" => "badge bg-warning text-dark",
+                        "cancelado" => "badge bg-danger",
+                        _ => "badge bg-secondary"
+                    };
+
+                    <tr>
+                        <td>@item.Id</td>
+                        <td class="text-start">
+                            <strong>@item.ClienteNombre</strong><br />
+                            <small class="text-muted">ID: @item.ClienteId</small>
+                        </td>
+                        <td class="text-start">
+                            @item.ProductoNombre<br />
+                            <small class="text-muted">ID: @item.ProductoId</small>
+                        </td>
+                        <td>@item.Cantidad</td>
+                        <td class="fw-bold">@string.Format("{0:C}", item.Total)</td>
+                        <td>@item.Fecha.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</td>
+                        <td><span class="@estadoClase">@item?.Estado?.ToUpper()</span></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+ 
+    function crearCompraAjax() { 
+        var clienteId = parseInt($("#f_clienteId").val());
+        var productoId = parseInt($("#f_productoId").val());
+        var cantidad = parseInt($("#f_cantidad").val()) || 1;
+        var totalVal = $("#f_total").val();
+        var total = (totalVal === null || totalVal === "") ? null : parseFloat(totalVal);
+        var estado = $("#f_estado").val() || "pendiente";
+
+        var compra = {
+            ClienteId: clienteId,
+            ProductoId: productoId,
+            Cantidad: cantidad,
+            Total: total,
+            Estado: estado
+        };
+
+        $.ajax({
+            method: 'POST',
+            url: '@Url.Action("CrearAjax", "Compras")',
+            contentType: 'application/json; charset=utf-8',
+            data: JSON.stringify(compra),
+            success: function (respuesta) {
+                if (respuesta && respuesta.exito) {
+                    var item = respuesta.datos; // objeto con los datos de la compra creada
+
+                    // Construir la fila HTML
+                    var estadoClase = 'badge bg-secondary';
+                    if ((item.estado || '').toLowerCase() === 'pagado') estadoClase = 'badge bg-success';
+                    if ((item.estado || '').toLowerCase() === 'pendiente') estadoClase = 'badge bg-warning text-dark';
+                    if ((item.estado || '').toLowerCase() === 'cancelado') estadoClase = 'badge bg-danger';
+
+                    var fila = '<tr>' +
+                        '<td>' + item.id + '</td>' +
+                        '<td class="text-start"><strong>' + (item.clienteNombre || '') + '</strong><br/><small class="text-muted">ID: ' + item.clienteId + '</small></td>' +
+                        '<td class="text-start">' + (item.productoNombre || '') + '<br/><small class="text-muted">ID: ' + item.productoId + '</small></td>' +
+                        '<td>' + item.cantidad + '</td>' +
+                        '<td class="fw-bold">' + new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(item.total) + '</td>' +
+                        '<td>' + (new Date(item.fecha)).toLocaleString() + '</td>' +
+                        '<td><span class="' + estadoClase + '">' + (item.estado || '').toUpperCase() + '</span></td>' +
+                        '</tr>';
+
+                    // Insertar la fila nueva al inicio de la tabla
+                    $('#tablaCompras tbody').prepend(fila);
+
+                    // Mensaje de éxito
+                    $('#msgCrearCompra').html('<div class="text-success">Compra creada correctamente (ID: ' + item.id + ')</div>');
+
+                    // Limpiar formulario
+                    $("#f_clienteId").val('');
+                    $("#f_productoId").val('');
+                    $("#f_cantidad").val('1');
+                    $("#f_total").val('');
+                    $("#f_estado").val('pendiente');
+                } else {
+                    var mensaje = respuesta && (respuesta.mensaje || JSON.stringify(respuesta.errores)) || 'Error al crear la compra';
+                    $('#msgCrearCompra').html('<div class="text-danger">' + mensaje + '</div>');
+                }
+            },
+            //mensaje de error
+            error: function (xhr, status, error) {
+                console.error(error);
+                $('#msgCrearCompra').html('<div class="text-danger">Error al crear la compra.</div>');
+            }
+        });
+    }
+
+</script>

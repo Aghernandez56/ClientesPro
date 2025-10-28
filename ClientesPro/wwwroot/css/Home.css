@@ -1,0 +1,37 @@
+﻿/* Banner de bienvenida */
+.banner {
+    background: linear-gradient(to right, #d4edda, #c3e6cb);
+    border-radius: 15px;
+    padding: 50px 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+    .banner h1 {
+        font-size: 3rem;
+    }
+
+/* Estilo para las cards */
+.card {
+    border-radius: 20px;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+    .card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+
+/* Botones con transición */
+.btn {
+    border-radius: 25px;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+    .btn:hover {
+        transform: scale(1.05);
+    }
+
+/* Footer */
+.footer-msg {
+    font-size: 1.1rem;
+    font-weight: 500;

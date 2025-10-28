@@ -1,0 +1,63 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="container mt-5">
+
+    <!-- Banner -->
+    <div class="text-center banner mb-5">
+        <h1 class="display-4 text-success fw-bold">
+            <i class="bi bi-shop-window"></i> Bienvenido a Mi Súper
+        </h1>
+        <p class="lead text-secondary">
+            Tu supermercado de confianza, fresco y siempre cerca de ti.
+        </p>
+    </div>
+
+    <!-- Sección de categorías -->
+    <div class="row g-4 text-center">
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <i class="bi bi-basket-fill text-success display-3"></i>
+                    <h5 class="card-title mt-3">Productos</h5>
+                    <p class="card-text">Explora nuestra variedad de alimentos y artículos de primera necesidad.</p>
+                    <a class="btn btn-success px-4" asp-controller="Productos" asp-action="Productos">Ver Productos</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <i class="bi bi-people-fill text-primary display-3"></i>
+                    <h5 class="card-title mt-3">Clientes</h5>
+                    <p class="card-text">Conoce a nuestros clientes frecuentes y únete a nuestra comunidad.</p>
+                    <a class="btn btn-primary px-4" asp-controller="Clientes" asp-action="Clientes">Ver Clientes</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 h-100 bg-warning-subtle">
+                <div class="card-body">
+                    <i class="bi bi-tags-fill text-warning display-3"></i>
+                    <h5 class="card-title mt-3">Marcas</h5>
+                    <p class="card-text">Resumen de compras.</p>
+                    <a class="btn btn-warning px-4 text-white" asp-controller="Compras" asp-action="Compras">Ver Compras</a>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- Mensaje final -->
+    <div class="text-center mt-5">
+        <p class="text-muted footer-msg">
+            Gracias por elegirnos <i class="bi bi-heart-fill text-danger"></i>
+        </p>
+    </div>
+
+</div>
