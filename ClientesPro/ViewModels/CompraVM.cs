@@ -1,10 +1,13 @@
-﻿namespace ClientesPro.ViewModels
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace ClientesPro.ViewModels
 {
     public class CompraVM
     {
         public int Id { get; set; }
 
         // Cliente
+        [Required]
         public int ClienteId { get; set; }
         public string? ClienteNombre { get; set; }
 

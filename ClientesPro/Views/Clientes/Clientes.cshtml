@@ -1,0 +1,129 @@
+﻿@model IEnumerable<ClientesPro.ViewModels.ClienteVM>
+
+@{
+    ViewData["Title"] = "Clientes";
+}
+
+<div class="container mt-4">
+    <h2 class="text-center text-primary mb-4">
+        <i class="bi bi-people-fill me-2"></i>Listado de Clientes
+    </h2>
+
+    <!-- Botón de regreso -->
+    <div class="text-center mt-4">
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary px-4 shadow-sm">
+            <i class="bi bi-arrow-left-circle"></i> Regresar al Inicio
+        </a>
+    </div>
+
+    <!-- Formulario rápido para crear cliente -->
+    <div class="card mb-4 p-3">
+        <h5>Crear cliente rápido</h5>
+        <div class="row g-2 align-items-end">
+            <div class="col-sm-5">
+                <label class="form-label small">Nombre completo</label>
+                <input id="f_nombreCompleto" type="text" class="form-control" />
+            </div>
+            <div class="col-sm-5">
+                <label class="form-label small">Dirección (opcional)</label>
+                <input id="f_direccion" type="text" class="form-control" />
+            </div>
+            <div class="col-sm-2">
+                <button id="btnCrearCliente" type="button" class="btn btn-primary w-100" onclick="crearClienteAjax()">Crear</button>
+            </div>
+        </div>
+
+        <div id="msgCrearCliente" class="mt-2"></div>
+    </div>
+
+    <!-- Tabla de clientes -->
+    <div class="table-responsive shadow-sm">
+        <table id="tablaClientes" class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Id</th>
+                    <th>Nombre completo</th>
+                    <th>Dirección</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr data-id="@item.Id">
+                        <td class="align-middle">@item.Id</td>
+                        <td class="align-middle">@item.NombreCompleto</td>
+                        <td class="align-middle">@item.Direccion</td>
+                        <td class="align-middle text-center">
+                            <button class="btn btn-sm btn-outline-secondary me-1">
+                                <i class="bi bi-pencil"></i> Editar
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" >
+                                <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function crearClienteAjax() {
+        // Obtener valores del formulario
+        var nombre = $('#f_nombreCompleto').val() || '';
+        var direccion = $('#f_direccion').val() || '';
+
+        // Crear el objeto con los datos del cliente
+        var vm = {
+            NombreCompleto: nombre,
+            Direccion: direccion
+        };
+
+        // Deshabilitar el botón mientras se procesa
+        $('#btnCrearCliente').prop('disabled', true);
+        $('#msgCrearCliente').html('');
+
+        $.ajax({
+            method: 'POST',
+            url: '@Url.Action("CrearAjax", "Clientes")',
+            contentType: 'application/json; charset=utf-8',
+            data: JSON.stringify(vm),
+            success: function (respuesta) {
+                // Rehabilitar el botón
+                $('#btnCrearCliente').prop('disabled', false);
+
+                if (respuesta && respuesta.exito) {
+                    var item = respuesta.datos; // objeto con los datos del cliente creado
+
+                    // Construir la fila HTML
+                    var fila = '<tr>' +
+                        '<td>' + (item.id ?? '') + '</td>' +
+                        '<td class="text-start"><strong>' + (item.nombreCompleto || '') + '</strong></td>' +
+                        '<td class="text-start">' + (item.direccion || '') + '</td>' +
+                        '</tr>';
+
+                    // Insertar la fila nueva al inicio de la tabla
+                    $('#tablaClientes tbody').prepend(fila);
+
+                    // Mensaje de éxito
+                    $('#msgCrearCliente').html('<div class="text-success">Cliente creado correctamente (ID: ' + (item.id ?? '') + ')</div>');
+
+                    // Limpiar formulario
+                    $('#f_nombreCompleto').val('');
+                    $('#f_direccion').val('');
+                } else {
+                    var mensaje = respuesta && (respuesta.mensaje || JSON.stringify(respuesta.errores)) || 'Error al crear cliente';
+                    $('#msgCrearCliente').html('<div class="text-danger">' + mensaje + '</div>');
+                }
+            },
+            error: function (xhr, status, error) {
+                // Rehabilitar el botón en caso de error
+                $('#btnCrearCliente').prop('disabled', false);
+                console.error(error);
+                $('#msgCrearCliente').html('<div class="text-danger">Error al crear cliente.</div>');
+            }
+        });
+    }
+</script>

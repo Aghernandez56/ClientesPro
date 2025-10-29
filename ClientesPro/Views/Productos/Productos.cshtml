@@ -1,0 +1,140 @@
+﻿@model IEnumerable<ClientesPro.ViewModels.ProductoVM>
+
+<div class="container mt-4">
+    <h2 class="text-center text-primary mb-4">
+        <i class="bi bi-box-seam me-2"></i>Listado de Productos
+    </h2>
+
+    <!-- Botón de regreso -->
+    <div class="text-center mt-4">
+        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary px-4 shadow-sm">
+            <i class="bi bi-arrow-left-circle"></i> Regresar al Inicio
+        </a>
+    </div>
+
+    <!-- Formulario rápido para crear producto -->
+    <div class="card mb-4 p-3">
+        <h5>Crear producto rápido</h5>
+        <div class="row g-2 align-items-end">
+            <div class="col-sm-4">
+                <label class="form-label small">Nombre</label>
+                <input id="f_nombre" type="text" class="form-control" />
+            </div>
+            <div class="col-sm-5">
+                <label class="form-label small">Descripción</label>
+                <input id="f_descripcion" type="text" class="form-control" />
+            </div>
+            <div class="col-sm-2">
+                <label class="form-label small">Precio</label>
+                <input id="f_precio" type="number" step="0.01" class="form-control" />
+            </div>
+            <div class="col-sm-1">
+                <button id="btnCrearProducto" type="button" class="btn btn-primary w-100" onclick="crearProductoAjax()">Crear</button>
+            </div>
+        </div>
+
+        <div id="msgCrearProducto" class="mt-2"></div>
+    </div>
+
+    <!-- Tabla de productos -->
+    <div class="table-responsive shadow-sm">
+        <table id="tablaProductos" class="table table-striped table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>Id</th>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Precio</th>
+                    <th class="text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr data-id="@item.Id">
+                        <td class="align-middle">@item.Id</td>
+                        <td class="align-middle">@item.Nombre</td>
+                        <td class="align-middle">@item.Descripcion</td>
+                        <td class="align-middle">@item.Precio.ToString("C")</td>
+                        <td class="align-middle text-center">
+                            <button class="btn btn-sm btn-outline-secondary me-1">
+                                <i class="bi bi-pencil"></i> Editar
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i> Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    function crearProductoAjax() {
+        // Obtener valores del formulario
+        var nombre = $('#f_nombre').val() || '';
+        var descripcion = $('#f_descripcion').val() || '';
+        var precioVal = $('#f_precio').val();
+        var precio = (precioVal === null || precioVal === '') ? 0 : parseFloat(precioVal);
+
+        // Crear el objeto con los datos del producto
+        var vm = {
+            Nombre: nombre,
+            Descripcion: descripcion,
+            Precio: precio
+        };
+
+        // Deshabilitar el botón mientras se procesa
+        $('#btnCrearProducto').prop('disabled', true);
+        $('#msgCrearProducto').html('');
+
+        $.ajax({
+            method: 'POST',
+            url: '@Url.Action("CrearAjax", "Productos")',
+            contentType: 'application/json; charset=utf-8',
+            data: JSON.stringify(vm),
+            success: function (respuesta) {
+                // Rehabilitar el botón
+                $('#btnCrearProducto').prop('disabled', false);
+
+                if (respuesta && respuesta.exito) {
+                    var item = respuesta.datos; // objeto con los datos del producto creado
+
+                    // Construir la fila HTML
+                    var fila = '<tr data-id="' + (item.id ?? '') + '">' +
+                        '<td class="align-middle">' + (item.id ?? '') + '</td>' +
+                        '<td class="align-middle"><strong>' + (item.nombre || '') + '</strong></td>' +
+                        '<td class="align-middle">' + (item.descripcion || '') + '</td>' +
+                        '<td class="align-middle fw-bold">' + new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(item.precio || 0) + '</td>' +
+                        '<td class="align-middle text-center">' +
+                        '<button class="btn btn-sm btn-outline-secondary me-1"><i class="bi bi-pencil"></i> Editar</button>' +
+                        '<button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Eliminar</button>' +
+                        '</td>' +
+                        '</tr>';
+
+                    // Insertar la fila nueva al inicio de la tabla
+                    $('#tablaProductos tbody').prepend(fila);
+
+                    // Mensaje de éxito
+                    $('#msgCrearProducto').html('<div class="text-success">Producto creado correctamente (ID: ' + (item.id ?? '') + ')</div>');
+
+                    // Limpiar formulario
+                    $('#f_nombre').val('');
+                    $('#f_descripcion').val('');
+                    $('#f_precio').val('');
+                } else {
+                    var mensaje = respuesta && (respuesta.mensaje || JSON.stringify(respuesta.errores)) || 'Error al crear producto';
+                    $('#msgCrearProducto').html('<div class="text-danger">' + mensaje + '</div>');
+                }
+            },
+            error: function (xhr, status, error) {
+                // Rehabilitar el botón en caso de error
+                $('#btnCrearProducto').prop('disabled', false);
+                console.error(error);
+                $('#msgCrearProducto').html('<div class="text-danger">Error al crear producto.</div>');
+            }
+        });
+    }
+</script>
