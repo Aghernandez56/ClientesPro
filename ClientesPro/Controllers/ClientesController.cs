@@ -34,13 +34,17 @@ namespace ClientesPro.Controllers
         {
             if (!ModelState.IsValid)
             {
-                var errores = ModelState.Values
-                                        .SelectMany(v => v.Errors)
-                                        .Select(e => e.ErrorMessage)
-                                        .ToList();
+                // Diccionario campo => lista de mensajes
+                var erroresPorCampo = ModelState
+                    .Where(kvp => kvp.Value.Errors.Any())
+                    .ToDictionary(
+                        kvp => kvp.Key,
+                        kvp => kvp.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
 
-                return Json(new { exito = false, mensaje = "Modelo inválido.", errores });
+                return Json(new { exito = false, mensaje = "Modelo inválido.", errores = erroresPorCampo });
             }
+
 
             try
             {

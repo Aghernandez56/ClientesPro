@@ -33,10 +33,6 @@
                 <input id="f_cantidad" type="number" class="form-control" value="1" min="1" />
             </div>
             <div class="col-sm-2">
-                <label class="form-label small">Total (opcional)</label>
-                <input id="f_total" type="number" step="0.01" class="form-control" />
-            </div>
-            <div class="col-sm-2">
                 <label class="form-label small">Estado</label>
                 <select id="f_estado" class="form-select">
                     <option value="pendiente" selected>Pendiente</option>
@@ -98,21 +94,18 @@
     </div>
 </div>
 
+
 <script>
- 
     function crearCompraAjax() { 
         var clienteId = parseInt($("#f_clienteId").val());
         var productoId = parseInt($("#f_productoId").val());
         var cantidad = parseInt($("#f_cantidad").val()) || 1;
-        var totalVal = $("#f_total").val();
-        var total = (totalVal === null || totalVal === "") ? null : parseFloat(totalVal);
         var estado = $("#f_estado").val() || "pendiente";
 
         var compra = {
             ClienteId: clienteId,
             ProductoId: productoId,
             Cantidad: cantidad,
-            Total: total,
             Estado: estado
         };
 
@@ -151,19 +144,16 @@
                     $("#f_clienteId").val('');
                     $("#f_productoId").val('');
                     $("#f_cantidad").val('1');
-                    $("#f_total").val('');
                     $("#f_estado").val('pendiente');
                 } else {
                     var mensaje = respuesta && (respuesta.mensaje || JSON.stringify(respuesta.errores)) || 'Error al crear la compra';
                     $('#msgCrearCompra').html('<div class="text-danger">' + mensaje + '</div>');
                 }
             },
-            //mensaje de error
             error: function (xhr, status, error) {
                 console.error(error);
                 $('#msgCrearCompra').html('<div class="text-danger">Error al crear la compra.</div>');
             }
         });
     }
-
 </script>

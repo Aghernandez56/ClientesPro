@@ -13,28 +13,32 @@
     </div>
 
     <!-- Formulario rápido para crear producto -->
-    <div class="card mb-4 p-3">
-        <h5>Crear producto rápido</h5>
-        <div class="row g-2 align-items-end">
-            <div class="col-sm-4">
-                <label class="form-label small">Nombre</label>
-                <input id="f_nombre" type="text" class="form-control" />
-            </div>
-            <div class="col-sm-5">
-                <label class="form-label small">Descripción</label>
-                <input id="f_descripcion" type="text" class="form-control" />
-            </div>
-            <div class="col-sm-2">
-                <label class="form-label small">Precio</label>
-                <input id="f_precio" type="number" step="0.01" class="form-control" />
-            </div>
-            <div class="col-sm-1">
-                <button id="btnCrearProducto" type="button" class="btn btn-primary w-100" onclick="crearProductoAjax()">Crear</button>
-            </div>
+    <div class="row g-2 align-items-end">
+        <div class="col-sm-4">
+            <label class="form-label small" for="f_nombre">Nombre</label>
+            <input id="f_nombre" name="Nombre" type="text" class="form-control" />
+            <div id="err_nombre" class="form-text text-danger small"></div>
         </div>
 
-        <div id="msgCrearProducto" class="mt-2"></div>
+        <div class="col-sm-5">
+            <label class="form-label small" for="f_descripcion">Descripción</label>
+            <input id="f_descripcion" name="Descripcion" type="text" class="form-control" />
+            <div id="err_descripcion" class="form-text text-danger small"></div>
+        </div>
+
+        <div class="col-sm-2">
+            <label class="form-label small" for="f_precio">Precio</label>
+            <input id="f_precio" name="Precio" type="number" step="0.01" class="form-control" />
+            <div id="err_precio" class="form-text text-danger small"></div>
+        </div>
+
+        <div class="col-sm-1">
+            <button id="btnCrearProducto" type="button" class="btn btn-primary w-100" onclick="crearProductoAjax()">Crear</button>
+        </div>
     </div>
+    <div id="msgCrearProducto" class="mt-2"></div>
+
+
 
     <!-- Tabla de productos -->
     <div class="table-responsive shadow-sm">
@@ -72,23 +76,88 @@
 </div>
 
 <script>
-    function crearProductoAjax() {
-        // Obtener valores del formulario
+    // Limpia mensajes y estilos de validación
+    function clearErrors(prefix = '') {
+        // limpiar spans de error que usan convención: err_<campoLower>
+        $('[id^="err_"]').html('');
+        // remover clases invalidas
+        $('.is-invalid').removeClass('is-invalid');
+    }
+
+    // Pinta errores por campo. 
+    function paintFieldErrors(errors) {
+        if (!errors) return;
+
+        var fieldMap = {
+            'Nombre': 'nombre',
+            'Descripcion': 'descripcion',
+            'Precio': 'precio'
+        };
+
+        Object.keys(errors).forEach(function (key) {
+            // tomar la parte final de la clave si viene con prefijo (ej: "vm.Nombre")
+            var shortKey = key.split('.').pop();
+            var mapped = fieldMap[shortKey] || shortKey.toLowerCase();
+
+            var spanId = '#err_' + mapped;
+            var inputId = '#f_' + mapped;
+
+            var mensajes = errors[key];
+            var html = mensajes.map(function (m) { return '<div>' + m + '</div>'; }).join('');
+            if ($(spanId).length) {
+                $(spanId).html(html);
+            } else {
+                // fallback: mostrar en msgCrearProducto
+                $('#msgCrearProducto').append('<div class="text-danger">' + mensajes.join(', ') + '</div>');
+            }
+
+            if ($(inputId).length) {
+                $(inputId).addClass('is-invalid');
+            }
+        });
+    }
+
+    // Validación  mínima antes de enviar
+    function validateProductoClient() {
+        clearErrors();
         var nombre = $('#f_nombre').val() || '';
         var descripcion = $('#f_descripcion').val() || '';
         var precioVal = $('#f_precio').val();
-        var precio = (precioVal === null || precioVal === '') ? 0 : parseFloat(precioVal);
+        var precio = precioVal === '' ? null : parseFloat(precioVal);
 
-        // Crear el objeto con los datos del producto
+        var errors = {};
+
+        if (!nombre.trim()) errors['Nombre'] = ['El nombre es obligatorio.'];
+        if (!descripcion.trim()) errors['Descripcion'] = ['La descripción es obligatoria.'];
+        if (precio === null || isNaN(precio)) errors['Precio'] = ['El precio es obligatorio y debe ser numérico.'];
+        else if (precio <= 0) errors['Precio'] = ['El precio debe ser mayor a 0.'];
+
+        return errors;
+    }
+
+    // AJAX: crear producto
+    function crearProductoAjax() {
+        $('#msgCrearProducto').html('');
+        clearErrors();
+
+        // validación client-side rápida
+        var clientErr = validateProductoClient();
+        if (Object.keys(clientErr).length) {
+            paintFieldErrors(clientErr);
+            return;
+        }
+
+        var nombre = $('#f_nombre').val() || '';
+        var descripcion = $('#f_descripcion').val() || '';
+        var precio = parseFloat($('#f_precio').val()) || 0;
+
         var vm = {
             Nombre: nombre,
             Descripcion: descripcion,
             Precio: precio
         };
 
-        // Deshabilitar el botón mientras se procesa
         $('#btnCrearProducto').prop('disabled', true);
-        $('#msgCrearProducto').html('');
 
         $.ajax({
             method: 'POST',
@@ -96,13 +165,11 @@
             contentType: 'application/json; charset=utf-8',
             data: JSON.stringify(vm),
             success: function (respuesta) {
-                // Rehabilitar el botón
                 $('#btnCrearProducto').prop('disabled', false);
 
                 if (respuesta && respuesta.exito) {
-                    var item = respuesta.datos; // objeto con los datos del producto creado
+                    var item = respuesta.datos;
 
-                    // Construir la fila HTML
                     var fila = '<tr data-id="' + (item.id ?? '') + '">' +
                         '<td class="align-middle">' + (item.id ?? '') + '</td>' +
                         '<td class="align-middle"><strong>' + (item.nombre || '') + '</strong></td>' +
@@ -114,23 +181,26 @@
                         '</td>' +
                         '</tr>';
 
-                    // Insertar la fila nueva al inicio de la tabla
                     $('#tablaProductos tbody').prepend(fila);
-
-                    // Mensaje de éxito
                     $('#msgCrearProducto').html('<div class="text-success">Producto creado correctamente (ID: ' + (item.id ?? '') + ')</div>');
 
-                    // Limpiar formulario
+                    // limpiar
                     $('#f_nombre').val('');
                     $('#f_descripcion').val('');
                     $('#f_precio').val('');
+                    clearErrors();
                 } else {
-                    var mensaje = respuesta && (respuesta.mensaje || JSON.stringify(respuesta.errores)) || 'Error al crear producto';
-                    $('#msgCrearProducto').html('<div class="text-danger">' + mensaje + '</div>');
+                    
+                    if (respuesta && respuesta.errores && typeof respuesta.errores === 'object') {
+                        paintFieldErrors(respuesta.errores);
+                        if (respuesta.mensaje) $('#msgCrearProducto').prepend('<div class="text-danger">' + respuesta.mensaje + '</div>');
+                    } else {
+                        var mensaje = respuesta && (respuesta.mensaje || JSON.stringify(respuesta.errores)) || 'Error al crear producto';
+                        $('#msgCrearProducto').html('<div class="text-danger">' + mensaje + '</div>');
+                    }
                 }
             },
             error: function (xhr, status, error) {
-                // Rehabilitar el botón en caso de error
                 $('#btnCrearProducto').prop('disabled', false);
                 console.error(error);
                 $('#msgCrearProducto').html('<div class="text-danger">Error al crear producto.</div>');

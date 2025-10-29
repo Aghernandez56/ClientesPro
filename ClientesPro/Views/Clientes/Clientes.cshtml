@@ -21,12 +21,14 @@
         <h5>Crear cliente rápido</h5>
         <div class="row g-2 align-items-end">
             <div class="col-sm-5">
-                <label class="form-label small">Nombre completo</label>
-                <input id="f_nombreCompleto" type="text" class="form-control" />
+                <label class="form-label small" for="f_nombreCompleto">Nombre completo</label>
+                <input id="f_nombreCompleto" name="NombreCompleto" type="text" class="form-control" />
+                <div id="err_nombreCompleto" class="form-text text-danger small"></div>
             </div>
             <div class="col-sm-5">
-                <label class="form-label small">Dirección (opcional)</label>
-                <input id="f_direccion" type="text" class="form-control" />
+                <label class="form-label small" for="f_direccion">Dirección (opcional)</label>
+                <input id="f_direccion" name="Direccion" type="text" class="form-control" />
+                <div id="err_direccion" class="form-text text-danger small"></div>
             </div>
             <div class="col-sm-2">
                 <button id="btnCrearCliente" type="button" class="btn btn-primary w-100" onclick="crearClienteAjax()">Crear</button>
@@ -69,21 +71,84 @@
     </div>
 </div>
 
+
 <script>
+    // Limpia mensajes y estilos de validación
+    function clearErrorsClientes() {
+        $('#err_nombreCompleto').html('');
+        $('#err_direccion').html('');
+        $('#f_nombreCompleto, #f_direccion').removeClass('is-invalid');
+        $('#msgCrearCliente').html('');
+    }
+
+    // Pinta errores por campo. errors = { "NombreCompleto": ["msg1","msg2"], "Direccion": ["..."] }
+    function paintFieldErrorsClientes(errors) {
+        if (!errors) return;
+
+        Object.keys(errors).forEach(function (key) {
+            var shortKey = key.split('.').pop(); // por si viene con prefijo
+            var mapped = shortKey; // NombreCompleto, Direccion
+
+            var spanId = '#err_' + mapped.charAt(0).toLowerCase() + mapped.slice(1);
+            var inputId = '#f_' + mapped.charAt(0).toLowerCase() + mapped.slice(1);
+
+            // si las claves del servidor vienen en minúscula, fallback:
+            if ($(spanId).length === 0) {
+                // intentar clave en minúsculas completas
+                spanId = '#err_' + shortKey.toLowerCase();
+                inputId = '#f_' + shortKey.toLowerCase();
+            }
+
+            var mensajes = errors[key];
+            var html = mensajes.map(function (m) { return '<div>' + m + '</div>'; }).join('');
+            if ($(spanId).length) {
+                $(spanId).html(html);
+            } else {
+                $('#msgCrearCliente').append('<div class="text-danger">' + mensajes.join(', ') + '</div>');
+            }
+
+            if ($(inputId).length) {
+                $(inputId).addClass('is-invalid');
+            }
+        });
+    }
+
+    // Validación cliente mínima antes de enviar
+    function validateClienteClient() {
+        clearErrorsClientes();
+        var nombre = ($('#f_nombreCompleto').val() || '').trim();
+        var direccion = ($('#f_direccion').val() || '').trim();
+
+        var errors = {};
+
+        if (!nombre) errors['NombreCompleto'] = ['El nombre completo es obligatorio.'];
+        else if (nombre.length > 150) errors['NombreCompleto'] = ['El nombre no puede exceder 150 caracteres.'];
+
+        if (direccion && direccion.length > 250) errors['Direccion'] = ['La dirección no puede exceder 250 caracteres.'];
+
+        return errors;
+    }
+
+    // AJAX: crear cliente
     function crearClienteAjax() {
-        // Obtener valores del formulario
+        clearErrorsClientes();
+
+        // validación client-side rápida
+        var clientErr = validateClienteClient();
+        if (Object.keys(clientErr).length) {
+            paintFieldErrorsClientes(clientErr);
+            return;
+        }
+
         var nombre = $('#f_nombreCompleto').val() || '';
         var direccion = $('#f_direccion').val() || '';
 
-        // Crear el objeto con los datos del cliente
         var vm = {
             NombreCompleto: nombre,
             Direccion: direccion
         };
 
-        // Deshabilitar el botón mientras se procesa
         $('#btnCrearCliente').prop('disabled', true);
-        $('#msgCrearCliente').html('');
 
         $.ajax({
             method: 'POST',
@@ -91,35 +156,41 @@
             contentType: 'application/json; charset=utf-8',
             data: JSON.stringify(vm),
             success: function (respuesta) {
-                // Rehabilitar el botón
                 $('#btnCrearCliente').prop('disabled', false);
 
                 if (respuesta && respuesta.exito) {
-                    var item = respuesta.datos; // objeto con los datos del cliente creado
+                    var item = respuesta.datos;
 
-                    // Construir la fila HTML
-                    var fila = '<tr>' +
-                        '<td>' + (item.id ?? '') + '</td>' +
-                        '<td class="text-start"><strong>' + (item.nombreCompleto || '') + '</strong></td>' +
-                        '<td class="text-start">' + (item.direccion || '') + '</td>' +
+                    // Construir la fila HTML (usar las propiedades en camelCase que devuelva el servidor)
+                    var fila = '<tr data-id="' + (item.id ?? '') + '">' +
+                        '<td class="align-middle">' + (item.id ?? '') + '</td>' +
+                        '<td class="align-middle"><strong>' + (item.nombreCompleto || item.nombre || '') + '</strong></td>' +
+                        '<td class="align-middle">' + (item.direccion || '') + '</td>' +
+                        '<td class="align-middle text-center">' +
+                            '<button class="btn btn-sm btn-outline-secondary me-1"><i class="bi bi-pencil"></i> Editar</button>' +
+                            '<button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Eliminar</button>' +
+                        '</td>' +
                         '</tr>';
 
-                    // Insertar la fila nueva al inicio de la tabla
                     $('#tablaClientes tbody').prepend(fila);
-
-                    // Mensaje de éxito
                     $('#msgCrearCliente').html('<div class="text-success">Cliente creado correctamente (ID: ' + (item.id ?? '') + ')</div>');
 
-                    // Limpiar formulario
+                    // limpiar formulario y errores
                     $('#f_nombreCompleto').val('');
                     $('#f_direccion').val('');
+                    clearErrorsClientes();
                 } else {
-                    var mensaje = respuesta && (respuesta.mensaje || JSON.stringify(respuesta.errores)) || 'Error al crear cliente';
-                    $('#msgCrearCliente').html('<div class="text-danger">' + mensaje + '</div>');
+                    // si el servidor devuelve errores por campo (objeto), los pintamos
+                    if (respuesta && respuesta.errores && typeof respuesta.errores === 'object') {
+                        paintFieldErrorsClientes(respuesta.errores);
+                        if (respuesta.mensaje) $('#msgCrearCliente').prepend('<div class="text-danger">' + respuesta.mensaje + '</div>');
+                    } else {
+                        var mensaje = respuesta && (respuesta.mensaje || JSON.stringify(respuesta.errores)) || 'Error al crear cliente';
+                        $('#msgCrearCliente').html('<div class="text-danger">' + mensaje + '</div>');
+                    }
                 }
             },
             error: function (xhr, status, error) {
-                // Rehabilitar el botón en caso de error
                 $('#btnCrearCliente').prop('disabled', false);
                 console.error(error);
                 $('#msgCrearCliente').html('<div class="text-danger">Error al crear cliente.</div>');
@@ -127,3 +198,4 @@
         });
     }
 </script>
+
