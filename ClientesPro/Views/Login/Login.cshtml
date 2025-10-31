@@ -1,0 +1,120 @@
+﻿@model ClientesPro.ViewModels.LoginVM
+@{
+    ViewData["Title"] = "Iniciar sesión";
+}
+
+<div class="container mt-5" style="max-width:420px;">
+    <h3 class="mb-4 text-center">Iniciar sesión</h3>
+
+    <div id="alert-container"></div>
+
+    <form id="loginForm" method="post" asp-action="Login" asp-controller="Login">
+        @Html.AntiForgeryToken()
+
+        <div class="mb-3">
+            <label asp-for="Email" class="form-label"></label>
+            <input asp-for="Email" class="form-control" />
+            <div class="invalid-feedback" data-valmsg-for="Email"></div>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Password" class="form-label"></label>
+            <input asp-for="Password" class="form-control" />
+            <div class="invalid-feedback" data-valmsg-for="Password"></div>
+        </div>
+
+        <button id="btnSubmit" type="submit" class="btn btn-primary w-100">
+            Ingresar
+        </button>
+    </form>
+</div>
+
+<script>
+    (function () {
+        const $form = $('#loginForm');
+        const $btn = $('#btnSubmit');
+        const $alert = $('#alert-container');
+
+        function clearErrors() {
+            $form.find('.is-invalid').removeClass('is-invalid');
+            $form.find('[data-valmsg-for]').text('');
+            $alert.empty();
+        }
+
+        function showAlert(type, html) {
+            const tpl = `
+                <div class="alert alert-${type} alert-dismissible" role="alert">
+                    ${html}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>`;
+            $alert.html(tpl);
+        }
+
+        $form.on('submit', function (e) {
+            e.preventDefault();
+            clearErrors();
+
+            const originalText = $btn.html();
+            $btn.prop('disabled', true).html('Validando...');
+
+            //  token antiforgery del input generado por @Html.AntiForgeryToken()
+            const token = $form.find('input[name="__RequestVerificationToken"]').val();
+
+            //  FormData (incluye campos del form)
+            const fd = new FormData(this);
+
+            $.ajax({
+                url: $form.attr('action') || window.location.pathname,
+                method: 'POST',
+                data: fd,
+                processData: false, 
+                contentType: false,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'RequestVerificationToken': token 
+                },
+                success: function (data) {
+                    if (data && data.success) {
+                        // redirigir
+                        window.location.href = data.redirect || '/';
+                    } else {
+                        showAlert('danger', 'Error en el inicio de sesión.');
+                    }
+                },
+                error: function (xhr) {
+                    //  parsear JSON con errores
+                    let parsed = null;
+                    try {
+                        parsed = xhr.responseJSON || JSON.parse(xhr.responseText);
+                    } catch (err) {
+                        parsed = null;
+                    }
+
+                    if (parsed && parsed.errors) {
+                        const errors = parsed.errors;
+                        // errors en objeto }
+                        for (const key in errors) {
+                            if (!Object.prototype.hasOwnProperty.call(errors, key)) continue;
+                            const messages = errors[key];
+                            if (!key) {
+                                // error general
+                                showAlert('danger', messages.join('<br/>'));
+                            } else {
+                                // asignar error a campo
+                                const $field = $form.find(`[name="${key}"]`);
+                                const $err = $form.find(`[data-valmsg-for="${key}"]`);
+                                if ($field.length) $field.addClass('is-invalid');
+                                if ($err.length) $err.html(messages.join('<br/>'));
+                            }
+                        }
+                    } else {
+                        showAlert('danger', 'Ocurrió un error inesperado al procesar la solicitud.');
+                    }
+                },
+                complete: function () {
+                    $btn.prop('disabled', false).html(originalText);
+                }
+            });
+        });
+    });
+</script>
