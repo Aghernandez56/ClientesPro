@@ -34,7 +34,10 @@
                     <i class="bi bi-people-fill text-primary display-3"></i>
                     <h5 class="card-title mt-3">Clientes</h5>
                     <p class="card-text">Conoce a nuestros clientes frecuentes y únete a nuestra comunidad.</p>
-                    <a class="btn btn-primary px-4" asp-controller="Clientes" asp-action="Clientes">Ver Clientes</a>
+                    <button class="btn btn btn-primary px-4" onclick="mostrarAlerta()">
+                        <i class="bi bi-trash"></i> Ver Clientes
+                    </button>
+                    @* <a class="btn btn-primary px-4" asp-controller="Clientes" asp-action="Clientes">Ver Clientes</a> *@
                 </div>
             </div>
         </div>
@@ -45,7 +48,10 @@
                     <i class="bi bi-tags-fill text-warning display-3"></i>
                     <h5 class="card-title mt-3">Compras</h5>
                     <p class="card-text">Un resumen de nuestras ventas y ventana de Administración</p>
-                    <a class="btn btn-warning px-4 text-white" asp-controller="Compras" asp-action="Compras">Ver Compras</a>
+                    <button class="btn btn btn-warning px-4 text-white" onclick="mostrarAlerta()">
+                        <i class="bi bi-trash"></i> Ver Clientes
+                    </button>
+                    @* <a class="btn btn-warning px-4 text-white" asp-controller="Compras" asp-action="Compras">Ver Compras</a> *@
                 </div>
             </div>
         </div>
@@ -61,3 +67,11 @@
     </div>
 
 </div>
+
+<script>
+    function mostrarAlerta() {
+        alert("No disponible 🤠");
+    }
+    
+
+</script>
